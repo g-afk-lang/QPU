@@ -185,7 +185,6 @@ def main_ibm_hardware_fixed():
     # Step 3: Run quantum bitmask algorithm
     test_configs = [
         {'n_qubits': 3, 'bitmask': [1, 0, 1], 'name': 'Minimal 3-qubit'},
-        {'n_qubits': 90, 'bitmask': [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 1, 1, 1, 1, 1, 1, 1, 1,1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 1, 1, 1, 1, 1, 1, 1, 1,1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 1, 1, 1, 1, 1, 1, 1, 1], 'name': 'Minimal 3-qubit'}
 
     ]
     
