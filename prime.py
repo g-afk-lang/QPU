@@ -6,7 +6,7 @@ import math
 
 QiskitRuntimeService.save_account(
     channel="ibm_quantum_platform", 
-    token="API_KEY",
+    token="hk2eeYQdAWUNdM6NmaSG29-jxgp2P06bwNSOPleSfYx6",
     overwrite=True,
     set_as_default=True
 )
@@ -186,7 +186,7 @@ def main_massive_prime_detection():
         {'target_prime': 1000000, 'name': 'Million-scale primes'},      # ~20 qubits needed
         {'target_prime': 100000, 'name': 'Hundred-thousand primes'},    # ~17 qubits needed  
         {'target_prime': 10000, 'name': 'Ten-thousand primes'},         # ~14 qubits needed
-        {'target_prime': 100000000000000, 'name': 'Hundred-million primes'},  # ~27 qubits needed
+        {'target_prime': 100000000, 'name': 'Hundred-million primes'},  # ~27 qubits needed
     ]
     
     for config in massive_configs:
