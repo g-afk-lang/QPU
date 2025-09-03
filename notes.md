@@ -15,3 +15,6 @@ Stage 1 (Non-Deterministic Exploration): Creates exponential superposition
 Stage 2 (Oracle): Marks the solution states
 
 Stage 3 (THE BITMASK): Uses interference to "undo" the complexity
+
+
+https://youtube.com/shorts/OAUCjFVujzQ
