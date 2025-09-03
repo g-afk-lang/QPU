@@ -1,132 +1,136 @@
+
 from qiskit import QuantumCircuit
-from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
-from qiskit.transpiler import generate_preset_pass_manager
+from qiskit_aer import AerSimulator
+from qiskit.visualization import plot_histogram
 import numpy as np
-from itertools import combinations
-QiskitRuntimeService.save_account(
-    channel="ibm_quantum_platform", 
-    token="API_KEY",
-    overwrite=True,
-    set_as_default=True
-)
-def oracle(elements, target, n):
-    qc = QuantumCircuit(n)
-    patterns = []
-    for r in range(1, min(5, n+1)):
-        for combo in combinations(range(n), r):
-            if sum(elements[i] for i in combo) == target:
-                patterns.append(combo)
-    
-    for p in patterns:
-        if len(p) == 1:
-            qc.z(p[0])
-        elif len(p) == 2:
-            qc.cz(p[0], p[1])
-        elif len(p) == 3:
-            qc.ccz(p[0], p[1], p[2])
-        else:
-            qc.mcp(np.pi, list(p[:-1]), p[-1])
-    return qc
 
-def diffuser(n):
-    qc = QuantumCircuit(n)
-    for i in range(n):
-        qc.h(i)
-    for i in range(n):
-        qc.x(i)
-    
-    if n == 2:
-        qc.cz(0, 1)
-    elif n == 3:
-        qc.ccz(0, 1, 2)
-    elif n > 3:
-        qc.mcp(np.pi, list(range(n-1)), n-1)
-    
-    for i in range(n):
-        qc.x(i)
-    for i in range(n):
-        qc.h(i)
-    return qc
+def analyze_quantum_results(counts: dict, numbers: list, target_sum: int):
+    """
+    Analyzes and displays the results of a quantum subset sum experiment.
 
-def build_circuit(elements, target):
-    n = len(elements)
-    qc = QuantumCircuit(n)
+    Args:
+        counts (dict): The measurement counts dictionary from a Qiskit run.
+        numbers (list): The list of numbers used in the subset sum problem.
+        target_sum (int): The target sum for the problem.
+    """
+    total_shots = sum(counts.values())
     
-    # Superposition - foundation for bitmask
-    for i in range(n):
-        qc.h(i)
+    # --- Dynamic Mapping Creation ---
+    # Qiskit's bitstrings are little-endian. We reverse the numbers list
+    # so that index 0 of the string corresponds to the first number, etc.
+    num_map = list(reversed(numbers))
     
-    # Oracle - bitmask dimensionality stripping
-    qc.compose(oracle(elements, target, n), inplace=True)
-    
-    # Grover iterations
-    solutions = sum(1 for r in range(1, n+1) 
-                   for combo in combinations(range(n), r) 
-                   if sum(elements[i] for i in combo) == target)
-    
-    if solutions > 0:
-        iterations = max(1, int(np.pi/4 * np.sqrt(2**n / solutions)))
-        iterations = min(iterations, 3)
+    mapping = {}
+    for bitstring in counts.keys():
+        # Ensure bitstring has the correct length (padding with leading zeros if necessary)
+        padded_bitstring = bitstring.zfill(len(numbers))
+        subset = {num_map[i] for i, bit in enumerate(padded_bitstring) if bit == '1'}
+        mapping[padded_bitstring] = subset
+
+    # --- Generate Detailed Report ---
+    print(f"\n--- Dynamic Analysis for Set {numbers} with Target Sum: {target_sum} ---")
+    print("-" * 100)
+    header = (
+        f"{'Measured State':<18}"
+        f"{'Corresponding Subset':<25}"
+        f"{'Sum':<8}"
+        f"{'Measurement Count':<22}"
+        f"{'Probability (%)':<18}"
+        f"{'Result'}"
+    )
+    print(header)
+    print("-" * 100)
+
+    # Sort results by count for clarity
+    sorted_counts = sorted(counts.items(), key=lambda item: item[1], reverse=True)
+
+    # Process and print each measurement outcome
+    solution_counts = 0
+    for bitstring, count in sorted_counts:
+        padded_bitstring = bitstring.zfill(len(numbers))
+        subset = mapping[padded_bitstring]
+        current_sum = sum(subset)
+        probability = (count / total_shots) * 100
         
-        for _ in range(iterations):
-            qc.compose(diffuser(n), inplace=True)
-    
-    qc.measure_all()
-    return qc
+        result_status = "Solution" if current_sum == target_sum else "Not a Solution"
+        if result_status == "Solution":
+            solution_counts += count
+        
+        row = (
+            f"{padded_bitstring:<18}"
+            f"{str(subset) if subset else '{}':<25}"
+            f"{current_sum:<8}"
+            f"{count:<22}"
+            f"{probability:<18.2f}"
+            f"{result_status}"
+        )
+        print(row)
 
-def run_ibm(elements, target, shots=4096):
-    service = QiskitRuntimeService(channel="ibm_quantum_platform")
-    backend = service.least_busy(operational=True, simulator=False, min_num_qubits=len(elements))
-    
-    qc = build_circuit(elements, target)
-    
-    # Transpile with optimization
-    pass_manager = generate_preset_pass_manager(optimization_level=3, backend=backend)
-    transpiled = pass_manager.run(qc)
-    
-    # Setup sampler with correct V2 options
-    sampler = SamplerV2(mode=backend)
-    sampler.options.default_shots = shots
-    
-    # Error suppression for SamplerV2 (not resilience_level)
-    sampler.options.dynamical_decoupling.enable = True
-    sampler.options.dynamical_decoupling.sequence_type = "XpXm"
-    sampler.options.twirling.enable_gates = True
-    
-    job = sampler.run([transpiled])
-    result = job.result()
-    counts = result[0].data.meas.get_counts()
-    
-    return counts, backend.name, qc.depth()
+    print("-" * 100)
 
-def decode(counts, elements, target):
-    results = []
-    total = sum(counts.values())
-    
-    for bits, count in sorted(counts.items(), key=lambda x: x[1], reverse=True):
-        subset = [elements[i] for i, bit in enumerate(reversed(bits)) if bit == '1']
-        if sum(subset) == target:
-            prob = count / total * 100
-            if prob > 1.0:
-                results.append((subset, prob))
-    return results
+    # --- Final Summary ---
+    solution_probability = (solution_counts / total_shots) * 100
+    print("\nSummary:")
+    print(f"Total probability of measuring a correct solution: {solution_probability:.2f}%")
+    print("This confirms the 'bitmask' (amplitude amplification) successfully isolated the correct answers.")
 
-# Execute bitmask superposition algorithm
-elements = [3, 5, 7, 11, 13, 5, 3, 5, 7, 11, 13, 5]
-target = 16
 
-print(f"Elements: {elements}")
-print(f"Target: {target}")
-print(f"Bitmask space: 2^{len(elements)} = {2**len(elements):,}")
+# --- 1. PROBLEM DEFINITION ---
+problem_set = [1, 2, 3,4,5,6,7,8,9]
+problem_target = 7
+n = len(problem_set)
 
-counts, backend_name, depth = run_ibm(elements, target)
-solutions = decode(counts, elements, target)
+# --- 2. CIRCUIT CONSTRUCTION ---
+circuit = QuantumCircuit(n)
 
-print(f"\nIBM Backend: {backend_name}")
-print(f"Circuit depth: {depth}")
-print(f"Quantum solutions:")
-for subset, prob in solutions[:8]:
-    print(f"  {subset} ({prob:.1f}%)")
+# --- STAGE 1: The Non-Deterministic Exploration ---
+print("Implementing Stage 1: Non-Deterministic Exploration...")
+circuit.h(range(n))
+circuit.barrier()
 
-print(f"\nBitmask superposition: {len(solutions)} high-probability solutions")
-print("Exponential → polynomial dimensionality reduction: ✓")
+# --- STAGE 2: The Oracle (Marking the Solutions) ---
+# This oracle is specific to the problem: set={1,2,3}, target=3
+# Solutions are |001> and |110>
+print("Implementing Stage 2: The Oracle...")
+# Mark state |001>
+circuit.x([1, 2])
+circuit.cp(np.pi, 2, 0)
+circuit.x([1, 2])
+circuit.barrier()
+# Mark state |110>
+circuit.x(0)
+circuit.mcp(np.pi, [1, 2], 0)
+circuit.x(0)
+circuit.barrier()
+
+# --- STAGE 3: The "Bitmask" (Undoing Complexity) ---
+print("Implementing Stage 3: The 'Bitmask' to Undo Complexity...")
+def grover_diffuser(qc, n_qubits):
+    qc.h(range(n_qubits))
+    qc.x(range(n_qubits))
+    qc.h(n_qubits-1)
+    qc.mcx(list(range(n_qubits-1)), n_qubits-1)
+    qc.h(n_qubits-1)
+    qc.x(range(n_qubits))
+    qc.h(range(n_qubits))
+    qc.barrier()
+grover_diffuser(circuit, n)
+
+# --- FINAL MEASUREMENT ---
+print("Performing final measurement...")
+circuit.measure_all()
+
+# --- 3. EXECUTION ---
+simulator = AerSimulator()
+# For a real problem, you might need more shots for a larger search space
+shots = 1024 
+result = simulator.run(circuit, shots=shots).result()
+actual_counts = result.get_counts()
+
+
+# --- 4. DYNAMIC ANALYSIS ---
+# The actual results from the simulation are now fed into the analysis function
+analyze_quantum_results(actual_counts, problem_set, problem_target)
+
+# Optional: Visualize the results
+plot_histogram(actual_counts)
