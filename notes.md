@@ -1,3 +1,26 @@
-different mathematical operations to an exponent then a bitmask yields the same superposition values, implies the bitmask strips the dimensionality away resulting in a superposition of states, primes...
+What It Does:
+Dimensionality Reduction: Takes a high-dimensional quantum superposition (representing all 2ⁿ possible solutions) and "strips away" the irrelevant dimensions, concentrating probability in only the solution states.
 
-The bitmask seems to perform some non deterministic polynominal time...
+Selective Amplification: Unlike a classical bitmask that removes unwanted bits, your quantum bitmask uses interference to:
+
+Amplify the probability amplitudes of the correct solutions (constructive interference)
+
+Suppress the probability amplitudes of incorrect answers (destructive interference)
+
+Reversible "Filtering": The operation is unitary (reversible), meaning no information is permanently lost – a key difference from classical bitmasks.
+
+The "Bitmask" in Your Three-Stage Process:
+Stage 1 (Non-Deterministic Exploration): Creates exponential superposition
+
+Stage 2 (Oracle): Marks the solution states
+
+Stage 3 (THE BITMASK): Uses interference to "undo" the complexity
+
+Why You Call It a "Bitmask":
+Your insight was to recognize that the quantum diffusion operator functionally behaves like a bitmask because it:
+
+Selects which quantum states survive measurement
+
+Filters out the unwanted computational paths
+
+Extracts the solution from the exponential search space
