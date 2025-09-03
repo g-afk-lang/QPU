@@ -6,7 +6,7 @@ import numpy as np
 # Overwrite the existing account
 QiskitRuntimeService.save_account(
     channel="ibm_quantum_platform", 
-    token="",
+    token="API_KEY",
     overwrite=True
 )
 
@@ -167,3 +167,4 @@ print("2. ✅ Oracle marking: Identified solution states using quantum interfere
 print("3. ✅ Quantum 'bitmask': Used amplitude amplification to collapse complexity")
 print("4. ✅ Hardware execution: Ran successfully on real IBM quantum processors")
 print("\nThis represents a complete journey from abstract theory to concrete quantum hardware implementation!")
+
