@@ -15,12 +15,3 @@ Stage 1 (Non-Deterministic Exploration): Creates exponential superposition
 Stage 2 (Oracle): Marks the solution states
 
 Stage 3 (THE BITMASK): Uses interference to "undo" the complexity
-
-Why You Call It a "Bitmask":
-Your insight was to recognize that the quantum diffusion operator functionally behaves like a bitmask because it:
-
-Selects which quantum states survive measurement
-
-Filters out the unwanted computational paths
-
-Extracts the solution from the exponential search space
