@@ -10,6 +10,8 @@ Suppress the probability amplitudes of incorrect answers (destructive interferen
 Reversible "Filtering": The operation is unitary (reversible), meaning no information is permanently lost – a key difference from classical bitmasks.
 
 The "Bitmask" in Your Three-Stage Process:
+
+
 Stage 1 (Non-Deterministic Exploration): Creates exponential superposition
 
 Stage 2 (Oracle): Marks the solution states
